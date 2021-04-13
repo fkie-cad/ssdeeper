@@ -68,11 +68,6 @@ extern "C" {
  *        three identical characters
  */
 #define FUZZY_FLAG_ELIMSEQ 0x1u
-/**
- * @brief fuzzy_digest flag indicating not to truncate the second part to
- *        SPAMSUM_LENGTH/2 characters.
- */
-#define FUZZY_FLAG_NOTRUNC 0x2u
 
 struct fuzzy_state;
 

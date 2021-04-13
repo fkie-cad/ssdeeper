@@ -120,8 +120,7 @@ struct blockhash_context
 {
   unsigned int dindex;
   char digest[SPAMSUM_LENGTH];
-  char halfdigest;
-  char h, halfh;
+  char h;
 };
 
 struct fuzzy_state
@@ -154,9 +153,7 @@ struct fuzzy_state
   self->bhend = 1;
   self->bhendlimit = NUM_BLOCKHASHES - 1;
   self->bh[0].h = HASH_INIT;
-  self->bh[0].halfh = HASH_INIT;
   self->bh[0].digest[0] = '\0';
-  self->bh[0].halfdigest = '\0';
   self->bh[0].dindex = 0;
   self->total_size = 0;
   self->reduce_border = (uint_least64_t)MIN_BLOCKSIZE * SPAMSUM_LENGTH;
@@ -217,9 +214,7 @@ static void fuzzy_try_fork_blockhash(struct fuzzy_state *self)
   {
     nbh = obh + 1;
     nbh->h = obh->h;
-    nbh->halfh = obh->halfh;
     nbh->digest[0] = '\0';
-    nbh->halfdigest = '\0';
     nbh->dindex = 0;
     ++self->bhend;
   }
@@ -268,7 +263,6 @@ static void fuzzy_engine_step(struct fuzzy_state *self, unsigned char c)
   for (i = self->bhstart; i < self->bhend; ++i)
   {
     self->bh[i].h = sum_hash(c, self->bh[i].h);
-    self->bh[i].halfh = sum_hash(c, self->bh[i].halfh);
   }
   if (self->flags & FUZZY_STATE_NEED_LASTHASH)
     self->lasth = sum_hash(c, self->lasth);
@@ -297,7 +291,6 @@ static void fuzzy_engine_step(struct fuzzy_state *self, unsigned char c)
     }
     self->bh[i].digest[self->bh[i].dindex] =
       b64[self->bh[i].h];
-    self->bh[i].halfdigest = b64[self->bh[i].halfh];
     if (self->bh[i].dindex < SPAMSUM_LENGTH - 1) {
       /* We can have a problem with the tail overflowing. The
        * easiest way to cope with this is to only reset the
@@ -308,8 +301,6 @@ static void fuzzy_engine_step(struct fuzzy_state *self, unsigned char c)
       self->bh[i].digest[++(self->bh[i].dindex)] = '\0';
       self->bh[i].h = HASH_INIT;
       if (self->bh[i].dindex < SPAMSUM_LENGTH / 2) {
-	self->bh[i].halfh = HASH_INIT;
-	self->bh[i].halfdigest = '\0';
       }
     }
     else
@@ -357,6 +348,41 @@ static int memcpy_eliminate_sequences(char *dst,
   return n;
 }
 
+int fuzzy_block_digest(const struct fuzzy_state *self, unsigned int bi, int remain,
+		unsigned int flags, char **result) {
+	uint32_t h = roll_sum(&self->roll);
+	int i = (int) self->bh[bi].dindex;
+	assert(i <= remain);
+	if ((flags & FUZZY_FLAG_ELIMSEQ) != 0)
+		i = memcpy_eliminate_sequences(*result, self->bh[bi].digest, i);
+	else
+		memcpy(*result, self->bh[bi].digest, (size_t) i);
+
+	*result += i;
+	remain -= i;
+	if (h != 0) {
+		assert(remain > 0);
+		**result = b64[self->bh[bi].h];
+		if ((flags & FUZZY_FLAG_ELIMSEQ) == 0 || i < 3
+				|| **result != *result[-1] || **result != *result[-2]
+				|| **result != *result[-3]) {
+			++*result;
+			--remain;
+		}
+	} else if (self->bh[bi].digest[self->bh[bi].dindex] != '\0') {
+		assert(remain > 0);
+		**result = self->bh[bi].digest[self->bh[bi].dindex];
+		if ((flags & FUZZY_FLAG_ELIMSEQ) == 0 || i < 3
+				|| **result != *result[-1] || **result != *result[-2]
+				|| **result != *result[-3]) {
+			++*result;
+			--remain;
+		}
+	}
+
+	return remain;
+}
+
 int fuzzy_digest(const struct fuzzy_state *self,
 		 /*@out@*/ char *result,
 		 unsigned int flags)
@@ -396,85 +422,15 @@ int fuzzy_digest(const struct fuzzy_state *self,
   assert(i < remain);
   remain -= i;
   result += i;
-  i = (int)self->bh[bi].dindex;
-  assert(i <= remain);
-  if ((flags & FUZZY_FLAG_ELIMSEQ) != 0)
-    i = memcpy_eliminate_sequences(result, self->bh[bi].digest, i);
-  else
-    memcpy(result, self->bh[bi].digest, (size_t)i);
-  result += i;
-  remain -= i;
-  if (h != 0)
-  {
-    assert(remain > 0);
-    *result = b64[self->bh[bi].h];
-    if((flags & FUZZY_FLAG_ELIMSEQ) == 0 || i < 3 ||
-       *result != result[-1] ||
-       *result != result[-2] ||
-       *result != result[-3]) {
-      ++result;
-      --remain;
-    }
-  }
-  else if (self->bh[bi].digest[self->bh[bi].dindex] != '\0') {
-    assert(remain > 0);
-    *result = self->bh[bi].digest[self->bh[bi].dindex];
-    if((flags & FUZZY_FLAG_ELIMSEQ) == 0 || i < 3 ||
-       *result != result[-1] ||
-       *result != result[-2] ||
-       *result != result[-3]) {
-      ++result;
-      --remain;
-    }
-  }
+
+  remain = fuzzy_block_digest(self, bi, remain, flags, &result);
   assert(remain > 0);
   *result++ = ':';
   --remain;
   if (bi < self->bhend - 1)
   {
     ++bi;
-    i = (int)self->bh[bi].dindex;
-    if ((flags & FUZZY_FLAG_NOTRUNC) == 0 &&
-	i > SPAMSUM_LENGTH / 2 - 1)
-      i = SPAMSUM_LENGTH / 2 - 1;
-    assert(i <= remain);
-    if ((flags & FUZZY_FLAG_ELIMSEQ) != 0)
-      i = memcpy_eliminate_sequences(result,
-				     self->bh[bi].digest, i);
-    else
-      memcpy(result, self->bh[bi].digest, (size_t)i);
-    result += i;
-    remain -= i;
-    if (h != 0) {
-      assert(remain > 0);
-      h = (flags & FUZZY_FLAG_NOTRUNC) != 0 ? self->bh[bi].h :
-	self->bh[bi].halfh;
-      *result = b64[h];
-      if ((flags & FUZZY_FLAG_ELIMSEQ) == 0 || i < 3 ||
-	  *result != result[-1] ||
-	  *result != result[-2] ||
-	  *result != result[-3])
-      {
-	++result;
-	--remain;
-      }
-    }
-    else {
-      i = (flags & FUZZY_FLAG_NOTRUNC) != 0 ?
-	  self->bh[bi].digest[self->bh[bi].dindex] : self->bh[bi].halfdigest;
-      if (i != '\0') {
-	assert(remain > 0);
-	*result = i;
-	if ((flags & FUZZY_FLAG_ELIMSEQ) == 0 || i < 3 ||
-	    *result != result[-1] ||
-	    *result != result[-2] ||
-	    *result != result[-3])
-	{
-	  ++result;
-	  --remain;
-	}
-      }
-    }
+    remain = fuzzy_block_digest(self, bi, remain, flags, &result);
   }
   else if (h != 0)
   {
