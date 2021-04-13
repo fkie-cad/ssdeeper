@@ -24,3 +24,4 @@ if ((h+1)==0 || ((h+1) % SSDEEP_BS(bi))){
     add character to digest
 }
 ``` 
+768:6WAU41W2CS9MXcjtKOTiHxC1j/ZDeUl/wC/wmFK9xhFRpoCwi96:61DbCdcjoD811D3wC//FGxhFry,"forensic_last_segment.txt"
