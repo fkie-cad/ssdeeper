@@ -360,7 +360,7 @@ int fuzzy_block_digest(const struct fuzzy_state *self, unsigned int bi, int rema
 
 	*result += i;
 	remain -= i;
-	if (h != 0) {
+	if ((h+1)==0 || ((h+1) % SSDEEP_BS(bi))) {
 		assert(remain > 0);
 		**result = b64[self->bh[bi].h];
 		if ((flags & FUZZY_FLAG_ELIMSEQ) == 0 || i < 3
@@ -369,17 +369,7 @@ int fuzzy_block_digest(const struct fuzzy_state *self, unsigned int bi, int rema
 			++*result;
 			--remain;
 		}
-	} else if (self->bh[bi].digest[self->bh[bi].dindex] != '\0') {
-		assert(remain > 0);
-		**result = self->bh[bi].digest[self->bh[bi].dindex];
-		if ((flags & FUZZY_FLAG_ELIMSEQ) == 0 || i < 3
-				|| **result != *result[-1] || **result != *result[-2]
-				|| **result != *result[-3]) {
-			++*result;
-			--remain;
-		}
 	}
-
 	return remain;
 }
 
@@ -424,6 +414,7 @@ int fuzzy_digest(const struct fuzzy_state *self,
   result += i;
 
   remain = fuzzy_block_digest(self, bi, remain, flags, &result);
+
   assert(remain > 0);
   *result++ = ':';
   --remain;
@@ -432,7 +423,7 @@ int fuzzy_digest(const struct fuzzy_state *self,
     ++bi;
     remain = fuzzy_block_digest(self, bi, remain, flags, &result);
   }
-  else if (h != 0)
+  else if ((h+1)==0 || ((h+1) % SSDEEP_BS(bi)))
   {
     assert(bi == 0 || bi == NUM_BLOCKHASHES - 1);
     assert(remain > 0);
