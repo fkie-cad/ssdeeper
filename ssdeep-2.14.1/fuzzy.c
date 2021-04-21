@@ -47,12 +47,12 @@
 #define ROLLING_WINDOW 7
 #define MIN_BLOCKSIZE 3
 #define HASH_INIT 0x27
-#define NUM_BLOCKHASHES 31
+#define NUM_BLOCKHASHES 16
 
 // Enable bit-parallel string processing only if bit-parallel algorithms
 // are enabled and considered to be efficient.
 #if !defined(SSDEEP_DISABLE_POSITION_ARRAY) || !SSDEEP_DISABLE_POSITION_ARRAY
-#if SPAMSUM_LENGTH <= 64 && CHAR_MIN >= -256 && CHAR_MAX <= 256 && (CHAR_MAX - CHAR_MIN + 1) <= 256
+#if SPAMSUM_LENGTH <= 128 && CHAR_MIN >= -256 && CHAR_MAX <= 256 && (CHAR_MAX - CHAR_MIN + 1) <= 256
 #define SSDEEP_ENABLE_POSITION_ARRAY
 #endif
 #endif
@@ -140,9 +140,12 @@ struct fuzzy_state
 #define FUZZY_STATE_NEED_LASTHASH  1u
 #define FUZZY_STATE_SIZE_FIXED     2u
 
-#define SSDEEP_BS(index) (((uint32_t)MIN_BLOCKSIZE) << (index))
+uint32_t SSDEEP_BS[16] = {3, 12, 48, 192, 768, 3072, 12288, 49152,
+		196608, 786432, 3145728, 12582912, 50331648, 201326592,
+		805306368, 3221225472};
+
 #define SSDEEP_TOTAL_SIZE_MAX \
-  ((uint_least64_t)SSDEEP_BS(NUM_BLOCKHASHES-1) * SPAMSUM_LENGTH)
+  ((uint_least64_t)SSDEEP_BS[NUM_BLOCKHASHES-1] * SPAMSUM_LENGTH)
 
 /*@only@*/ /*@null@*/ struct fuzzy_state *fuzzy_new(void)
 {
@@ -196,7 +199,7 @@ int fuzzy_set_total_input_length(struct fuzzy_state *state, uint_least64_t total
   }
   state->flags |= FUZZY_STATE_SIZE_FIXED;
   state->fixed_size = total_fixed_length;
-  while ((uint_least64_t)SSDEEP_BS(bi) * SPAMSUM_LENGTH < total_fixed_length)
+  while ((uint_least64_t)SSDEEP_BS[bi] * SPAMSUM_LENGTH < total_fixed_length)
   {
     ++bi;
     if (bi == NUM_BLOCKHASHES - 2)
@@ -241,13 +244,14 @@ static void fuzzy_try_reduce_blockhash(struct fuzzy_state *self)
     /* Initial blocksize estimate would select this or a smaller
      * blocksize. */
     return;
-  if (self->bh[self->bhstart + 1].dindex < SPAMSUM_LENGTH / 2)
+  if (self->bh[self->bhstart + 1].dindex < SPAMSUM_LENGTH / 4)
     /* Estimate adjustment would select this blocksize. */
     return;
   /* At this point we are clearly no longer interested in the
    * start_blocksize. Get rid of it. */
   ++self->bhstart;
-  self->reduce_border *= 2;
+  self->reduce_border *= 4;
+  self->rollmask = self->rollmask * 2 + 1;
   self->rollmask = self->rollmask * 2 + 1;
 }
 
@@ -283,6 +287,7 @@ static void fuzzy_engine_step(struct fuzzy_state *self, unsigned char c)
   if (horg % (uint32_t)MIN_BLOCKSIZE)
     return;
   h >>= self->bhstart;
+  h >>= self->bhstart;
 
   i = self->bhstart;
   do
@@ -307,13 +312,16 @@ static void fuzzy_engine_step(struct fuzzy_state *self, unsigned char c)
        * */
       self->bh[i].digest[++(self->bh[i].dindex)] = '\0';
       self->bh[i].h = HASH_INIT;
-      if (self->bh[i].dindex < SPAMSUM_LENGTH / 2) {
+      if (self->bh[i].dindex < SPAMSUM_LENGTH / 4) {
 	self->bh[i].halfh = HASH_INIT;
 	self->bh[i].halfdigest = '\0';
       }
     }
     else
       fuzzy_try_reduce_blockhash(self);
+    if (h & 1)
+      break;
+    h >>= 1;
     if (h & 1)
       break;
     h >>= 1;
@@ -365,7 +373,7 @@ int fuzzy_digest(const struct fuzzy_state *self,
   uint32_t h = roll_sum(&self->roll);
   int i, remain = FUZZY_MAX_RESULT - 1; /* Exclude terminating '\0'. */
   /* Verify that our elimination was not overeager. */
-  assert(bi == 0 || (uint_least64_t)SSDEEP_BS(bi) / 2 * SPAMSUM_LENGTH <
+  assert(bi == 0 || (uint_least64_t)SSDEEP_BS[bi] / 4 * SPAMSUM_LENGTH <
 	 self->total_size);
 
   if (self->total_size > SSDEEP_TOTAL_SIZE_MAX) {
@@ -380,16 +388,16 @@ int fuzzy_digest(const struct fuzzy_state *self,
     return -1;
   }
   /* Initial blocksize guess. */
-  while ((uint_least64_t)SSDEEP_BS(bi) * SPAMSUM_LENGTH < self->total_size)
+  while ((uint_least64_t)SSDEEP_BS[bi] * SPAMSUM_LENGTH < self->total_size)
     ++bi;
   /* Adapt blocksize guess to actual digest length. */
   if (bi >= self->bhend)
     bi = self->bhend - 1;
-  while (bi > self->bhstart && self->bh[bi].dindex < SPAMSUM_LENGTH / 2)
+  while (bi > self->bhstart && self->bh[bi].dindex < SPAMSUM_LENGTH / 4)
     --bi;
-  assert (!(bi > 0 && self->bh[bi].dindex < SPAMSUM_LENGTH / 2));
+  assert (!(bi > 0 && self->bh[bi].dindex < SPAMSUM_LENGTH / 4));
 
-  i = snprintf(result, (size_t)remain, "%lu:", (unsigned long)SSDEEP_BS(bi));
+  i = snprintf(result, (size_t)remain, "%lu:", (unsigned long)SSDEEP_BS[bi]);
   if (i <= 0)
     /* Maybe snprintf has set errno here? */
     return -1;
@@ -435,8 +443,8 @@ int fuzzy_digest(const struct fuzzy_state *self,
     ++bi;
     i = (int)self->bh[bi].dindex;
     if ((flags & FUZZY_FLAG_NOTRUNC) == 0 &&
-	i > SPAMSUM_LENGTH / 2 - 1)
-      i = SPAMSUM_LENGTH / 2 - 1;
+	i > SPAMSUM_LENGTH / 4 - 1)
+      i = SPAMSUM_LENGTH / 4 - 1;
     assert(i <= remain);
     if ((flags & FUZZY_FLAG_ELIMSEQ) != 0)
       i = memcpy_eliminate_sequences(result,
