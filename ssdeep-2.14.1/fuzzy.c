@@ -46,7 +46,7 @@
 
 #define ROLLING_WINDOW 7
 #define MIN_BLOCKSIZE 3
-#define HASH_INIT 0x27
+#define HASH_INIT 12391293801283098123
 #define NUM_BLOCKHASHES 31
 
 // Enable bit-parallel string processing only if bit-parallel algorithms
@@ -101,7 +101,7 @@ static void roll_hash(struct roll_state *self, unsigned char c)
 
 static uint32_t roll_sum(const struct roll_state *self)
 {
-  return self->h1 + self->h2 + self->h3;
+  return self->h1 + self->h2 + self->h3 + HASH_INIT;
 }
 
 /* A simple non-rolling hash, based on the FNV hash. */
