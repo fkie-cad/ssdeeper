@@ -31,6 +31,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
 #include <string.h>
 
 #include "fuzzy.h"
@@ -44,10 +45,13 @@
 #define unlikely(x) x
 #endif
 
-#define ROLLING_WINDOW 7
-#define MIN_BLOCKSIZE 3
-#define HASH_INIT 0x27
+
 #define NUM_BLOCKHASHES 16
+#define ROLLING_WINDOW 	7
+#define DJB2_PRIME 		(uint32_t)pow(33, ROLLING_WINDOW-1)
+#define	DJB2_TMP		(uint32_t)DJB2_PRIME * 33 * 5381
+#define MIN_BLOCKSIZE 	3
+#define HASH_INIT 		0x27
 
 // Enable bit-parallel string processing only if bit-parallel algorithms
 // are enabled and considered to be efficient.
@@ -60,9 +64,11 @@
 struct roll_state
 {
   unsigned char window[ROLLING_WINDOW];
-  uint32_t h1, h2, h3;
+  uint32_t hval;
   uint32_t n;
 };
+
+static uint32_t roll_sum(const struct roll_state *self);
 
 static void roll_init(/*@out@*/ struct roll_state *self)
 {
@@ -70,38 +76,24 @@ static void roll_init(/*@out@*/ struct roll_state *self)
 }
 
 /*
- * a rolling hash, based on the Adler checksum. By using a rolling hash
+ * a rolling hash, based on the djb2 algorithm. By using a rolling hash
  * we can perform auto resynchronisation after inserts/deletes
-
- * internally, h1 is the sum of the bytes in the window and h2
- * is the sum of the bytes times the index
-
- * h3 is a shift/xor based rolling hash, and is mostly needed to ensure that
- * we can cope with large blocksize values
  */
 static void roll_hash(struct roll_state *self, unsigned char c)
 {
-  self->h2 -= self->h1;
-  self->h2 += ROLLING_WINDOW * (uint32_t)c;
-
-  self->h1 += (uint32_t)c;
-  self->h1 -= (uint32_t)self->window[self->n];
-
+  self->hval -= (uint32_t)self->window[self->n] * DJB2_PRIME;
   self->window[self->n] = c;
+  self->hval += self->hval << 5;
+  self->hval += (uint32_t)c;
   self->n++;
-  if (self->n == ROLLING_WINDOW)
-    self->n = 0;
-
-  /* The original spamsum AND'ed this value with 0xFFFFFFFF which
-   * in theory should have no effect. This AND has been removed
-   * for performance (jk) */
-  self->h3 <<= 5;
-  self->h3 ^= c;
+  if (self->n == ROLLING_WINDOW){
+	  self->n = 0;
+  }
 }
 
 static uint32_t roll_sum(const struct roll_state *self)
 {
-  return self->h1 + self->h2 + self->h3;
+  return (uint32_t)(self->hval + DJB2_TMP);
 }
 
 /* A simple non-rolling hash, based on the FNV hash. */
