@@ -798,18 +798,10 @@ static uint32_t score_strings(const char *s1,
   memset(parray, 0, sizeof(parray));
   for (i = 0; i < s1len; i++)
     parray[s1[i] - CHAR_MIN] |= 1ull << i;
-  // the two strings must have a common substring of length
-  // ROLLING_WINDOW to be candidates
-  if (!has_common_substring_pa(parray, s2, s2len))
-    return 0;
   // compute the edit distance between the two strings. The edit distance gives
   // us a pretty good idea of how closely related the two strings are
   score = edit_distn_pa(parray, s1len, s2, s2len);
 #else
-  // the two strings must have a common substring of length
-  // ROLLING_WINDOW to be candidates
-  if (!has_common_substring(s1, s1len, s2, s2len))
-    return 0;
   // compute the edit distance between the two strings. The edit distance gives
   // us a pretty good idea of how closely related the two strings are
   score = edit_distn(s1, s1len, s2, s2len);
