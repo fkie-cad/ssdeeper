@@ -12,7 +12,7 @@
  */
 #include <stddef.h>
 
-#define EDIT_DISTN_MAXLEN 64 /* MAX_SPAMSUM */
+#define EDIT_DISTN_MAXLEN 128 /* MAX_SPAMSUM */
 #define EDIT_DISTN_INSERT_COST 1
 #define EDIT_DISTN_REMOVE_COST 1
 #define EDIT_DISTN_REPLACE_COST 2
