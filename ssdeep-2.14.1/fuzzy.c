@@ -52,7 +52,7 @@
 // Enable bit-parallel string processing only if bit-parallel algorithms
 // are enabled and considered to be efficient.
 #if !defined(SSDEEP_DISABLE_POSITION_ARRAY) || !SSDEEP_DISABLE_POSITION_ARRAY
-#if SPAMSUM_LENGTH <= 128 && CHAR_MIN >= -256 && CHAR_MAX <= 256 && (CHAR_MAX - CHAR_MIN + 1) <= 256
+#if SPAMSUM_LENGTH <= 64 && CHAR_MIN >= -256 && CHAR_MAX <= 256 && (CHAR_MAX - CHAR_MIN + 1) <= 256
 #define SSDEEP_ENABLE_POSITION_ARRAY
 #endif
 #endif
@@ -803,8 +803,8 @@ int fuzzy_compare(const char *str1, const char *str2)
   // apples to oranges. This isn't an 'error' per se. We could
   // have two valid signatures, but they can't be compared.
   if (block_size1 != block_size2 &&
-      (block_size1 > ULONG_MAX / 2 || block_size1*2 != block_size2) &&
-      (block_size1 % 2 == 1 || block_size1 / 2 != block_size2)) {
+      (block_size1 > ULONG_MAX / 4 || block_size1*4 != block_size2) &&
+      (block_size1 % 4 == 1 || block_size1 / 4 != block_size2)) {
     return 0;
   }
 
@@ -852,7 +852,7 @@ int fuzzy_compare(const char *str1, const char *str2)
   if (!copy_eliminate_sequences(&tmp, SPAMSUM_LENGTH, &s2p, ','))
     return -1;
   s2b2len = tmp - s2b2;
-
+  
   // Now that we know the strings are both well formed, are they
   // identical? We could save ourselves some work here
   if (block_size1 == block_size2 && s1b1len == s2b1len && s1b2len == s2b2len) {
@@ -864,14 +864,14 @@ int fuzzy_compare(const char *str1, const char *str2)
   // each signature has a string for two block sizes. We now
   // choose how to combine the two block sizes. We checked above
   // that they have at least one block size in common
-  if (block_size1 <= ULONG_MAX / 2) {
+  if (block_size1 <= ULONG_MAX / 4) {
     if (block_size1 == block_size2) {
       uint32_t score1, score2;
       score1 = score_strings(s1b1, s1b1len, s2b1, s2b1len, block_size1);
-      score2 = score_strings(s1b2, s1b2len, s2b2, s2b2len, block_size1*2);
+      score2 = score_strings(s1b2, s1b2len, s2b2, s2b2len, block_size1*4);
       score = MAX(score1, score2);
     }
-    else if (block_size1 * 2 == block_size2) {
+    else if (block_size1 * 4 == block_size2) {
       score = score_strings(s2b1, s2b1len, s1b2, s1b2len, block_size2);
     }
     else {
@@ -882,7 +882,7 @@ int fuzzy_compare(const char *str1, const char *str2)
     if (block_size1 == block_size2) {
       score = score_strings(s1b1, s1b1len, s2b1, s2b1len, block_size1);
     }
-    else if (block_size1 % 2 == 0 && block_size1 / 2 == block_size2) {
+    else if (block_size1 % 4 == 0 && block_size1 / 4 == block_size2) {
       score = score_strings(s1b1, s1b1len, s2b2, s2b2len, block_size1);
     }
     else {
