@@ -52,7 +52,7 @@
 // Enable bit-parallel string processing only if bit-parallel algorithms
 // are enabled and considered to be efficient.
 #if !defined(SSDEEP_DISABLE_POSITION_ARRAY) || !SSDEEP_DISABLE_POSITION_ARRAY
-#if SPAMSUM_LENGTH <= 64 && CHAR_MIN >= -256 && CHAR_MAX <= 256 && (CHAR_MAX - CHAR_MIN + 1) <= 256
+#if SPAMSUM_LENGTH <= 128 && CHAR_MIN >= -256 && CHAR_MAX <= 256 && (CHAR_MAX - CHAR_MIN + 1) <= 256
 #define SSDEEP_ENABLE_POSITION_ARRAY
 #endif
 #endif
@@ -596,14 +596,13 @@ static int has_common_substring(const char *s1, size_t s1len, const char *s2, si
 }
 
 
-
-#ifdef SSDEEP_ENABLE_POSITION_ARRAY
+#if defined(SSDEEP_ENABLE_POSITION_ARRAY) && defined(__SIZEOF_INT128__)
 
 // position array-based version of has_common_substring
-static int has_common_substring_pa(const unsigned long long *parray, const char *s2, size_t s2len)
+static int has_common_substring_pa(const __uint128_t *parray, const char *s2, size_t s2len)
 {
-  unsigned long long D;
-  // ROLLING_WINDOW <= s2len <= 64
+  __uint128_t D;
+  // ROLLING_WINDOW <= s2len <= 128
   size_t r = ROLLING_WINDOW - 1;
   size_t l;
   const char *ch;
@@ -628,15 +627,15 @@ static int has_common_substring_pa(const unsigned long long *parray, const char 
 }
 
 // position array-based version of edit_distn
-static int edit_distn_pa(const unsigned long long *parray, size_t s1len, const char *s2, size_t s2len)
+static int edit_distn_pa(const __uint128_t *parray, size_t s1len, const char *s2, size_t s2len)
 {
-  unsigned long long pv, nv, ph, nh, zd, mt, x, y;
-  unsigned long long msb;
+  __uint128_t pv, nv, ph, nh, zd, mt, x, y;
+  __uint128_t msb;
   size_t i;
-  // 0 < s1len <= 64
+  // 0 < s1len <= 128
   int cur = s1len;
-  msb = 1ull << (s1len - 1);
-  pv = -1;
+  msb = (__uint128_t)1 << (s1len - 1);
+  pv = (__uint128_t)0xFFFFFFFFFFFFFFFF << 64 | (__uint128_t)0xFFFFFFFFFFFFFFFF;
   nv = 0;
   for (i = 0; i < s2len; i++)
   {
@@ -645,12 +644,12 @@ static int edit_distn_pa(const unsigned long long *parray, size_t s1len, const c
     nh = pv & zd;
     if (nh & msb)
       --cur;
-    x  = nv | ~(pv | zd) | (pv & ~mt & 1ull);
+    x  = nv | ~(pv | zd) | (pv & ~mt & (__uint128_t)1);
     y  = (pv - nh) >> 1;
     ph = (x + y) ^ y;
     if (ph & msb)
       ++cur;
-    x  = (ph << 1) | 1ull;
+    x  = (ph << 1) | (__uint128_t)1;
     nv = x & zd;
     pv = (nh << 1) | ~(x | zd) | (x & (pv - nh));
   }
@@ -718,8 +717,8 @@ static uint32_t score_strings(const char *s1,
 {
   uint32_t score;
 
-#ifdef SSDEEP_ENABLE_POSITION_ARRAY
-  unsigned long long parray[CHAR_MAX - CHAR_MIN + 1];
+#if defined(SSDEEP_ENABLE_POSITION_ARRAY) && defined(__SIZEOF_INT128__)
+  __uint128_t parray[CHAR_MAX - CHAR_MIN + 1];
   size_t i;
   // skip short strings
   if (s1len < ROLLING_WINDOW)
@@ -729,7 +728,7 @@ static uint32_t score_strings(const char *s1,
   // construct position array for faster string algorithms
   memset(parray, 0, sizeof(parray));
   for (i = 0; i < s1len; i++)
-    parray[s1[i] - CHAR_MIN] |= 1ull << i;
+    parray[s1[i] - CHAR_MIN] |= (__uint128_t)1 << i; 
   // the two strings must have a common substring of length
   // ROLLING_WINDOW to be candidates
   if (!has_common_substring_pa(parray, s2, s2len))
@@ -852,7 +851,7 @@ int fuzzy_compare(const char *str1, const char *str2)
   if (!copy_eliminate_sequences(&tmp, SPAMSUM_LENGTH, &s2p, ','))
     return -1;
   s2b2len = tmp - s2b2;
-  
+
   // Now that we know the strings are both well formed, are they
   // identical? We could save ourselves some work here
   if (block_size1 == block_size2 && s1b1len == s2b1len && s1b2len == s2b2len) {
