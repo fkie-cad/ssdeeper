@@ -928,8 +928,8 @@ int fuzzy_compare(const char *str1, const char *str2)
     if (block_size1 == block_size2) {
       uint32_t score1, score2;
       score1 = score_strings(s1b1, s1b1len, s2b1, s2b1len, block_size1);
-      score2 = score_strings(s1b2, s1b2len, s2b2, s2b2len, block_size1*2);
-      score = MAX(score1, score2);
+      //score2 = score_strings(s1b2, s1b2len, s2b2, s2b2len, block_size1*2);
+      //score = MAX(score1, score2);
     }
     else if (block_size1 * 2 == block_size2) {
       score = score_strings(s2b1, s2b1len, s1b2, s1b2len, block_size2);
