@@ -792,27 +792,6 @@ static uint32_t score_strings(const char *s1,
 			      unsigned long block_size)
 {
   uint32_t score;
-
-#if defined(SSDEEP_ENABLE_POSITION_ARRAY) && defined(__SIZEOF_INT128__)
-  __uint128_t parray[CHAR_MAX - CHAR_MIN + 1];
-  size_t i;
-  // skip short strings
-  if (s1len < ROLLING_WINDOW)
-    return 0;
-  if (s2len < ROLLING_WINDOW)
-    return 0;
-  // construct position array for faster string algorithms
-  memset(parray, 0, sizeof(parray));
-  for (i = 0; i < s1len; i++)
-    parray[s1[i] - CHAR_MIN] |= (__uint128_t)1 << i; 
-  // the two strings must have a common substring of length
-  // ROLLING_WINDOW to be candidates
-  if (!has_common_substring_pa(parray, s2, s2len))
-    return 0;
-  // compute the edit distance between the two strings. The edit distance gives
-  // us a pretty good idea of how closely related the two strings are
-  score = edit_distn_pa(parray, s1len, s2, s2len);
-#else
   // the two strings must have a common substring of length
   // ROLLING_WINDOW to be candidates
   if (!has_common_substring(s1, s1len, s2, s2len))
@@ -820,7 +799,6 @@ static uint32_t score_strings(const char *s1,
   // compute the edit distance between the two strings. The edit distance gives
   // us a pretty good idea of how closely related the two strings are
   score = edit_distn(s1, s1len, s2, s2len);
-#endif
 
   // scale the edit distance by the lengths of the two
   // strings. This changes the score to be a measure of the
