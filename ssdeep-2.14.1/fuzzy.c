@@ -785,10 +785,6 @@ static uint32_t score_strings(const char *s1,
 			      unsigned long block_size)
 {
   uint32_t score;
-  // the two strings must have a common substring of length
-  // ROLLING_WINDOW to be candidates
-  if (!has_common_substring(s1, s1len, s2, s2len))
-    return 0;
 
   // compute the edit distance between the two strings. The edit distance gives
   // us a pretty good idea of how closely related the two strings are
