@@ -211,7 +211,7 @@ int fuzzy_set_total_input_length(struct fuzzy_state *state, uint_least64_t total
 static void fuzzy_try_fork_blockhash(struct fuzzy_state *self)
 {
   struct blockhash_context *obh, *nbh;
-  assert(self->bhend > 0);
+  //assert(self->bhend > 0);
   obh = self->bh + (self->bhend - 1);
   if (self->bhend <= self->bhendlimit)
   {
@@ -231,7 +231,7 @@ static void fuzzy_try_fork_blockhash(struct fuzzy_state *self)
 
 static void fuzzy_try_reduce_blockhash(struct fuzzy_state *self)
 {
-  assert(self->bhstart < self->bhend);
+  //assert(self->bhstart < self->bhend);
   if (self->bhend - self->bhstart < 2)
     /* Need at least two working hashes. */
     return;
