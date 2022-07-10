@@ -13,97 +13,19 @@ from os.path import basename
 
 
 
-def create_all_find_comparison_plot(csvfile, outfile, datatype=None, section=None):
+def create_all_find_comparison_plot(csvfile, outfile, datatype=None, section=None, comparison=None):
     df = pd.read_csv(csvfile, delimiter=';')
     
-    df1 = df.loc[(df['hash_generation'] == 'ssdeep-original')]
-    df2 = df.loc[(df['hash_generation'] == 'ssdeep-refactored')]
-    df3 = df.loc[(df['hash_generation'] == 'ssdeep-refactored-polynomial')]
-    df3['algorithm'] = '-refactored-poly'
-    df4 = df.loc[(df['hash_generation'] == 'ssdeep-refactored-djb2')]
-    df5 = df.loc[(df['hash_generation'] == 'ssdeep-4b')]
-    df6 = df.loc[(df['hash_generation'] == 'ssdeep-refactored-4b')]
-    df7 = df.loc[(df['hash_generation'] == 'ssdeep-refactored-4b-polynomial')]
-    df8 = df.loc[(df['hash_generation'] == 'ssdeep-refactored-4b-djb2')]
-
-    df11 = df1.loc[(df1['hash_comparison'] == 'ssdeep-original')]
-    df11['algorithm'] = '-original'
-    df12 = df1.loc[(df1['hash_comparison'] == 'ssdeep-original-opt')]
-    df12['algorithm'] = '-nocommsub'
-    df13 = df1.loc[(df1['hash_comparison'] == 'ssdeep-original-max')]
-    df13['algorithm'] = '-nomax'
-    df14 = df1.loc[(df1['hash_comparison'] == 'ssdeep-original-opt-max')]
-    df14['algorithm'] = '-nocommsub-nomax'
+    df = df.loc[(df['hash_comparison'] == comparison)]
+    df['algorithm'] = 'ssdeep'
     
-    df21 = df2.loc[(df2['hash_comparison'] == 'ssdeep-original')]
-    df21['algorithm'] = '-refactored'
-    df22 = df2.loc[(df2['hash_comparison'] == 'ssdeep-original-opt')]
-    df22['algorithm'] = '-refactored-nocommsub'
-    df23 = df2.loc[(df2['hash_comparison'] == 'ssdeep-original-max')]
-    df23['algorithm'] = '-refactored-max'
-    df24 = df2.loc[(df2['hash_comparison'] == 'ssdeep-original-opt-max')]
-    df24['algorithm'] = '-refactored-opt-max'
-   
-    df31 = df3.loc[(df3['hash_comparison'] == 'ssdeep-original')]
-    df31['algorithm'] = '-refactored-poly'
-    df32 = df3.loc[(df3['hash_comparison'] == 'ssdeep-original-opt')]
-    df32['algorithm'] = '-refactored-poly-opt'
-    df33 = df3.loc[(df3['hash_comparison'] == 'ssdeep-original-max')]
-    df33['algorithm'] = '-refactored-poly-max'
-    df34 = df3.loc[(df3['hash_comparison'] == 'ssdeep-original-opt-max')]
-    df34['algorithm'] = '-refactored-poly-opt-max'
+    if df.empty:
+        return
     
-    df41 = df4.loc[(df4['hash_comparison'] == 'ssdeep-original')]
-    df41['algorithm'] = '-refactored-djb2'
-    df42 = df4.loc[(df4['hash_comparison'] == 'ssdeep-original-opt')]
-    df42['algorithm'] = '-refactored-djb2-opt'
-    df43 = df4.loc[(df4['hash_comparison'] == 'ssdeep-original-max')]
-    df43['algorithm'] = '-refactored-djb2-max'
-    df44 = df4.loc[(df4['hash_comparison'] == 'ssdeep-original-opt-max')]
-    df44['algorithm'] = '-refactored-djb2-opt-max'
-    
-    df51 = df5.loc[(df5['hash_comparison'] == 'ssdeep-4b')]
-    df51['algorithm'] = '-4b'
-    df52 = df5.loc[(df5['hash_comparison'] == 'ssdeep-4b-opt')]
-    df52['algorithm'] = '-4b-opt'
-    df53 = df5.loc[(df5['hash_comparison'] == 'ssdeep-4b-max')]
-    df53['algorithm'] = '-4b-max'
-    df54 = df5.loc[(df5['hash_comparison'] == 'ssdeep-4b-opt-max')]
-    df54['algorithm'] = '-4b-opt-max'
-    
-    df61 = df6.loc[(df6['hash_comparison'] == 'ssdeep-4b')]
-    df61['algorithm'] = '-refactored-4b'
-    df62 = df6.loc[(df6['hash_comparison'] == 'ssdeep-4b-opt')]
-    df62['algorithm'] = '-refactored-4b-opt'
-    df63 = df6.loc[(df6['hash_comparison'] == 'ssdeep-4b-max')]
-    df63['algorithm'] = '-refactored-4b-max'
-    df64 = df6.loc[(df6['hash_comparison'] == 'ssdeep-4b-opt-max')]
-    df64['algorithm'] = '-refactored-4b-opt-max'
-    
-    df71 = df7.loc[(df7['hash_comparison'] == 'ssdeep-4b')]
-    df71['algorithm'] = '-refactored-4b-poly'
-    df72 = df7.loc[(df7['hash_comparison'] == 'ssdeep-4b-opt')]
-    df72['algorithm'] = '-refactored-4b-poly-opt'
-    df73 = df7.loc[(df7['hash_comparison'] == 'ssdeep-4b-max')]
-    df73['algorithm'] = '-refactored-4b-poly-max'
-    df74 = df7.loc[(df7['hash_comparison'] == 'ssdeep-4b-opt-max')]
-    df74['algorithm'] = '-refactored-4b-poly-opt-max' 
-    
-    df81 = df8.loc[(df8['hash_comparison'] == 'ssdeep-4b')]
-    df81['algorithm'] = '-refactored-4b-djb2'
-    df82 = df8.loc[(df8['hash_comparison'] == 'ssdeep-4b-opt')]
-    df82['algorithm'] = '-refactored-4b-djb2-opt'
-    df83 = df8.loc[(df8['hash_comparison'] == 'ssdeep-4b-max')]
-    df83['algorithm'] = '-refactored-4b-djb2-max'
-    df84 = df8.loc[(df8['hash_comparison'] == 'ssdeep-4b-opt-max')]
-    df84['algorithm'] = '-refactored-4b-djb2-opt-max'
-    
-    all_dfs = [df11, df12, df13, df14, df21, df22, df23, df24, df31, df32, df33, df34, df41, df42, df43, df44,
-    	       df51, df52, df53, df54, df61, df62, df63, df64, df71, df72, df73, df74, df81, df82, df83, df84]
-    
-    for x in [df11]:
-    	df = pd.concat([x])
-    	outfile = ''.join(outfile.split('.')[:-1]) + df['algorithm'].tolist()[0] + '.pdf'
+    file_name = csvfile.split('/')[-1]
+    file_name = file_name.split('.')[-2]
+    outfile = file_name + '_' + comparison + '.pdf'
+    print(outfile)
     
     sns.set_style('whitegrid')
     paper_rc = {'lines.linewidth': 1, 'lines.markersize': 1}
@@ -164,8 +86,8 @@ def create_all_find_comparison_plot(csvfile, outfile, datatype=None, section=Non
     axes[2].set_title('Modification: Insert bytes')
 
     g = sns.boxplot(x='similarity', y='result', hue='algorithm', fliersize=0.75, data=df_change, width=0.9, dodge=True, ax=axes[0], palette=palette)
-    h = sns.boxplot(x='similarity', y='result', hue='algorithm', fliersize=0.75, data=df_insert, width=0.9, dodge=True, ax=axes[1], palette=palette)
-    i = sns.boxplot(x='similarity', y='result', hue='algorithm', fliersize=0.75, data=df_delete, width=0.9, dodge=True, ax=axes[2], palette=palette)
+    h = sns.boxplot(x='similarity', y='result', hue='algorithm', fliersize=0.75, data=df_delete, width=0.9, dodge=True, ax=axes[1], palette=palette)
+    i = sns.boxplot(x='similarity', y='result', hue='algorithm', fliersize=0.75, data=df_insert, width=0.9, dodge=True, ax=axes[2], palette=palette)
     #g.set(ylim=(-2,102))
     #g.set(xlim=(-3,157))
     
@@ -195,6 +117,7 @@ def create_all_find_comparison_plot(csvfile, outfile, datatype=None, section=Non
     #labels=['-original', '-nocommonsub', '-nomax', '-nocommonsub-nomax']
     #legend1 = ax.legend(h[0:4], labels, loc='upper center', title='CF', markerscale=9., bbox_to_anchor=(0.153, +1.24), ncol=2, prop={'size': 22})
     
+    g.legend_.remove()
     h.legend_.remove()
     i.legend_.remove()
 
@@ -220,7 +143,12 @@ def main(argv=None):
         print('Usage: {prog} CSVFILE OUTFILE'.format(prog=argv[0]))
         return 1
 
-    create_all_find_comparison_plot(argv[1], argv[2], None, None)
+    comparison_functions = ["ssdeep-original", "ssdeep-original-max", "ssdeep-original-opt", "ssdeep-original-opt-max", "ssdeep-4b", "ssdeep-4b-max", "ssdeep-4b-opt", "ssdeep-4b-opt-max"]
+
+    for comparison in comparison_functions:
+        create_all_find_comparison_plot(argv[1], argv[2], None, None, comparison)
+
+
     #create_all_find_comparison_plot(argv[1], argv[2], None, 'first')
     #create_all_find_comparison_plot(argv[1], argv[2], None, 'second')
     #create_all_find_comparison_plot(argv[1], argv[2], None, 'third')
