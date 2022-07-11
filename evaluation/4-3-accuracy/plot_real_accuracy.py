@@ -17,15 +17,20 @@ def create_all_find_comparison_plot(csvfile, outfile, datatype=None, section=Non
     df = pd.read_csv(csvfile, delimiter=';')
     
     df = df.loc[(df['hash_comparison'] == comparison)]
-    df['algorithm'] = 'ssdeep'
+    df['algorithm'] = '-original' # palette color
+    
+    
+    if datatype:
+    	df = df.loc[(df['datatype'] == datatype)]
+    if section:
+    	df = df.loc[(df['section'] == section)]
+    
     
     if df.empty:
         return
     
     file_name = csvfile.split('/')[-1]
     file_name = file_name.split('.')[-2]
-    outfile = file_name + '_' + comparison + '.pdf'
-    print(outfile)
     
     sns.set_style('whitegrid')
     paper_rc = {'lines.linewidth': 1, 'lines.markersize': 1}
@@ -35,7 +40,7 @@ def create_all_find_comparison_plot(csvfile, outfile, datatype=None, section=Non
 
     if 'PALETTE' in os.environ:
         palette = json.loads(os.getenv('PALETTE'))
-        palette['-original'] = palette['-original-black']
+        palette['-original'] = palette['-original']
         palette['-nocommsub'] = palette['-original-black']
         palette['-nomax'] = palette['-original-black']
         palette['-nocommsub-nomax'] = palette['-original-black']
@@ -130,6 +135,9 @@ def create_all_find_comparison_plot(csvfile, outfile, datatype=None, section=Non
     
     plt.tight_layout()
     #g.axes.add_artist(legend1)
+
+
+    outfile = ''.join(outfile.split('.')[:-1]) + '_' + file_name + '_' + comparison + '.pdf'
 
     plt.savefig(outfile)
     plt.close('all')

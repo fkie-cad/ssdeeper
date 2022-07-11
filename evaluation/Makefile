@@ -13,7 +13,24 @@ accuracy-plots: plotdir
 	python3 4-3-accuracy/plot_fragment_accuracy.py 4-3-accuracy/ssdeep_fragment.csv $(PLOT_DIR)/accuracy/real/realdata_fragments.pdf >> $(PLOT_LOG) 2>&1
 	
 	echo "[+] Creating synthetic plots."
-	#python3 4-3-accuracy/plot_synthetic_accuracy.py 4-3-accuracy/ssdeep_comparison_synthetic.csv $(PLOT_DIR)/accuracy/synthetic/synthetic.pdf 0 >> $(PLOT_LOG) 2>&1
+	python3 4-3-accuracy/plot_synthetic_accuracy.py 4-3-accuracy/ssdeep_comparison_synthetic.csv $(PLOT_DIR)/accuracy/synthetic/synthetic.pdf 0 >> $(PLOT_LOG) 2>&1
+	python3 4-3-accuracy/plot_synthetic_accuracy.py 4-3-accuracy/ssdeep_comparison_synthetic.csv $(PLOT_DIR)/accuracy/synthetic/synthetic.pdf 1 >> $(PLOT_LOG) 2>&1
+	python3 4-3-accuracy/plot_synthetic_accuracy.py 4-3-accuracy/ssdeep_comparison_synthetic.csv $(PLOT_DIR)/accuracy/synthetic/synthetic.pdf 2 >> $(PLOT_LOG) 2>&1
+	python3 4-3-accuracy/plot_synthetic_accuracy.py 4-3-accuracy/ssdeep_comparison_synthetic.csv $(PLOT_DIR)/accuracy/synthetic/synthetic.pdf 3 >> $(PLOT_LOG) 2>&1
+	python3 4-3-accuracy/plot_synthetic_accuracy.py 4-3-accuracy/ssdeep_comparison_synthetic.csv $(PLOT_DIR)/accuracy/synthetic/synthetic.pdf 4 >> $(PLOT_LOG) 2>&1
+	python3 4-3-accuracy/plot_synthetic_accuracy.py 4-3-accuracy/ssdeep_comparison_synthetic.csv $(PLOT_DIR)/accuracy/synthetic/synthetic.pdf 5 >> $(PLOT_LOG) 2>&1
+	python3 4-3-accuracy/plot_synthetic_accuracy.py 4-3-accuracy/ssdeep_comparison_synthetic.csv $(PLOT_DIR)/accuracy/synthetic/synthetic.pdf 6 >> $(PLOT_LOG) 2>&1
+	python3 4-3-accuracy/plot_synthetic_accuracy.py 4-3-accuracy/ssdeep_comparison_synthetic.csv $(PLOT_DIR)/accuracy/synthetic/synthetic.pdf 7 >> $(PLOT_LOG) 2>&1
+	
+	echo "[+] Creating accuracy plots."
+	python3 4-3-accuracy/plot_real_accuracy.py 4-3-accuracy/ssdeep_comparison_real_4b.csv $(PLOT_DIR)/accuracy/real/realdata.pdf >> $(PLOT_LOG) 2>&1
+	python3 4-3-accuracy/plot_real_accuracy.py 4-3-accuracy/ssdeep_comparison_real_original.csv $(PLOT_DIR)/accuracy/real/realdata.pdf >> $(PLOT_LOG) 2>&1
+	python3 4-3-accuracy/plot_real_accuracy.py 4-3-accuracy/ssdeep_comparison_real_refactored.csv $(PLOT_DIR)/accuracy/real/realdata.pdf >> $(PLOT_LOG) 2>&1
+	python3 4-3-accuracy/plot_real_accuracy.py 4-3-accuracy/ssdeep_comparison_real_refactored_4b.csv $(PLOT_DIR)/accuracy/real/realdata.pdf >> $(PLOT_LOG) 2>&1
+	python3 4-3-accuracy/plot_real_accuracy.py 4-3-accuracy/ssdeep_comparison_real_refactored_4b_djb2.csv $(PLOT_DIR)/accuracy/real/realdata.pdf >> $(PLOT_LOG) 2>&1
+	python3 4-3-accuracy/plot_real_accuracy.py 4-3-accuracy/ssdeep_comparison_real_refactored_4b_poly.csv $(PLOT_DIR)/accuracy/real/realdata.pdf >> $(PLOT_LOG) 2>&1
+	python3 4-3-accuracy/plot_real_accuracy.py 4-3-accuracy/ssdeep_comparison_real_refactored_djb2.csv $(PLOT_DIR)/accuracy/real/realdata.pdf >> $(PLOT_LOG) 2>&1
+	python3 4-3-accuracy/plot_real_accuracy.py 4-3-accuracy/ssdeep_comparison_real_refactored_poly.csv $(PLOT_DIR)/accuracy/real/realdata.pdf >> $(PLOT_LOG) 2>&1
 	
 
 .ONESHELL:
