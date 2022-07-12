@@ -1,5 +1,27 @@
 #!/bin/bash
 
+
+# promising candidates
+
+# filtering process, lower false-positive rate
+git checkout ssdeep-refactored-djb2-nomax
+cd ssdeep-2.14.1
+./configure --prefix=/tmp/ssdeep-refactored-djb2-nomax
+make
+make install
+cd ..
+
+# increased detection rate, lower false-negative rate
+git checkout ssdeep-refactored-4b-djb2-nocommonsub
+cd ssdeep-2.14.1
+./configure --prefix=/tmp/ssdeep-refactored-4b-djb2-nocommonsub
+make
+make install
+cd ..
+
+
+
+
 # hash generation implementations:
 
 git checkout master
